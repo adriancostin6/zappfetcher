@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
     // to our consumers. We must give it a name because a Zig package can expose
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
-    const mod = b.addModule("zenv", .{
+    const zenv = b.addModule("zenv", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
         // in this file, which means that if you have declarations that you
@@ -39,6 +39,15 @@ pub fn build(b: *std.Build) void {
         // Later on we'll use this module as the root module of a test executable
         // which requires us to specify a target.
         .target = target,
+    });
+    const zenv_args = b.addModule("zenv-args", .{
+        // The root source file is the "entry point" of this module. Users of
+        // this module will only be able to access public declarations contained
+        // in this file, which means that if you have declarations that you
+        // intend to expose to consumers that were defined in other files part
+        // of this module, you will have to make sure to re-export them from
+        // the root file.
+        .root_source_file = b.path("src/args.zig"),
     });
 
     // Here we define an executable. An executable needs to have a root module
@@ -78,7 +87,8 @@ pub fn build(b: *std.Build) void {
                 // repeated because you are allowed to rename your imports, which
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
-                .{ .name = "zenv", .module = mod },
+                .{ .name = "zenv", .module = zenv },
+                .{ .name = "zenv-args", .module = zenv_args },
             },
         }),
     });
@@ -119,7 +129,7 @@ pub fn build(b: *std.Build) void {
     // Here `mod` needs to define a target, which is why earlier we made sure to
     // set the releative field.
     const mod_tests = b.addTest(.{
-        .root_module = mod,
+        .root_module = zenv,
     });
 
     // A run step that will run the test executable.
